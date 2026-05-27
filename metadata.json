@@ -1,0 +1,6 @@
+{
+  "name": "DSS Intermediação",
+  "description": "DSS Intermediação - Afiliada autorizada Ademicon. Especialistas em consórcios de imóveis, veículos e serviços.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
