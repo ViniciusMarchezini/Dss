@@ -15,6 +15,9 @@ import TrabalheConosco from './components/TrabalheConosco';
 import AdminPanel from './components/AdminPanel';
 import { WhyConsorcio, StepByStep, FAQSection, StickyWhatsApp } from './components/CorporateSections';
 
+// Import image assets
+import beautifulHouseImg from './assets/images/beautiful_house_1779733686313.png';
+
 type TabType = 'simulation' | 'atendimento' | 'gestores' | 'trabalhe' | 'admin';
 
 export default function App() {
@@ -169,7 +172,7 @@ export default function App() {
               <div className="absolute -inset-1.5 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-[32px] blur opacity-25 group-hover:opacity-35 transition duration-1000 group-hover:duration-200"></div>
               <div className="relative bg-[#0d1f4d] border border-blue-900/45 rounded-[28px] p-2 overflow-hidden shadow-2xl">
                 <img 
-                  src="/src/assets/images/beautiful_house_1779733686313.png" 
+                  src={beautifulHouseImg} 
                   alt="Casa de Alto Padrão - Consórcio Imobiliário" 
                   referrerPolicy="no-referrer"
                   className="w-full h-56 sm:h-72 object-cover rounded-[22px] shadow-inner transform hover:scale-[1.01] transition-transform duration-700"

@@ -1,5 +1,9 @@
 import { Gestor, Article, PushNotification, SimConfig } from "./types";
 
+// Import manager avatars
+import denilsonAvatar from "./assets/images/regenerated_image_1779733486756.jpg";
+import davisonAvatar from "./assets/images/regenerated_image_1779733487477.jpg";
+
 export const GESTORES: Gestor[] = [
   {
     id: "denilson",
@@ -11,7 +15,7 @@ export const GESTORES: Gestor[] = [
     experience: "12+ anos de especialidade no mercado financeiro e imobiliário",
     description: "Especialista em grandes contas imobiliárias e investimentos corporativos. Denilson tem larga atuação orientando empresários a alavancar patrimônios através de grupos estratégicos de consórcios Ademicon, aliando alto rendimento e planejamento tributário seguro.",
     specialty: ["Imóveis de Alto Padrão", "Alavancagem Corporativa", "Aposentadoria Imobiliária"],
-    avatarUrl: "/src/assets/images/regenerated_image_1779733486756.jpg"
+    avatarUrl: denilsonAvatar
   },
   {
     id: "davison",
@@ -23,7 +27,7 @@ export const GESTORES: Gestor[] = [
     experience: "10+ anos de consultoria patrimonial e planejamento de frotas",
     description: "Referência em consórcios de veículos, frotas de transporte e agronegócio. Davison atua na consultoria estratégica de lances e estruturação de grupos para aquisição acelerada, garantindo que o cliente otimize o fluxo de caixa sem descapitalizar a empresa.",
     specialty: ["Consórcio de Caminhões/Frotas", "Maquinário Agrícola", "Bens de Serviço e Tecnologia"],
-    avatarUrl: "/src/assets/images/regenerated_image_1779733487477.jpg"
+    avatarUrl: davisonAvatar
   }
 ];
 
