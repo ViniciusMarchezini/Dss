@@ -332,7 +332,7 @@ export default function App() {
               <div className="space-y-2 text-slate-350 font-light">
                 <div className="flex items-center space-x-2">
                   <MapPin className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span>Av. Batel, 1230 - Batel, Curitiba - PR</span>
+                  <span>Unidade Ademicon - São Caetano do Sul - SP (Sede DSS)</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Phone className="w-4 h-4 text-blue-400 shrink-0" />
