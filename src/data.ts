@@ -109,11 +109,11 @@ export const EDUCATION_ARTICLES: Article[] = [
     title: "Alavancagem com Lance Embutido: Estratégia Avançada",
     category: "Investimentos",
     readTime: "4 min de leitura",
-    summary: "Utilize até 30% da própria carta para dar lance e antecipar sua contemplação sem mexer na sua reserva financeira pessoal.",
+    summary: "Utilize até 25% da própria carta para dar lance e antecipar sua contemplação sem mexer na sua reserva financeira pessoal.",
     iconName: "Car",
     content: [
       "O Lance Embutido é uma das estratégias de aceleração de consórcio mais seguras e inteligentes recomendadas pela equipe técnica da DSS Intermediação.",
-      "O funcionamento é simples: você pode indicar à Ademicon que deseja utilizar até 30% do valor da sua própria carta como desconto de lance de contemplação.",
+      "O funcionamento é simples: você pode indicar à Ademicon que deseja utilizar até 25% do valor da sua própria carta como desconto de lance de contemplação.",
       "Caso o lance seja vencedor, o valor oferecido é diretamente descontado da sua carta e você recebe a diferença líquida para comprar o seu bem à vista. É um mecanismo fantástico de ganho de tempo e segurança financeira, sem necessidade de se descapitalizar."
     ]
   }
@@ -139,7 +139,7 @@ export const INITIAL_NOTIFICATIONS: PushNotification[] = [
   {
     id: "not-3",
     title: "Dica de Contemplação Rápida",
-    body: "Estatística oficial de lances do último mês demonstra excelentes médias para lances fixos de 30% com uso de lance embutido.",
+    body: "Estatística oficial de lances do último mês demonstra excelentes médias para lances fixos de 25% com uso de lance embutido.",
     time: "Há 2 dias",
     isNew: false,
     category: "alert"

@@ -25,11 +25,54 @@ const ALLOWED_ADMINS = [
   "marcehzini.consultor@gmail.com"
 ];
 
+function cleanExpiredLeads(leads: any[]): any[] {
+  const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  let changed = false;
+
+  const activeLeads = leads.filter(l => {
+    if (l.timestamp) {
+      if (now - l.timestamp > ONE_WEEK_MS) {
+        changed = true;
+        return false;
+      }
+      return true;
+    }
+    
+    // Parse DD/MM/YYYY text when timestamp is absent
+    if (l.date && typeof l.date === "string") {
+      const match = l.date.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      if (match) {
+        const day = parseInt(match[1], 10);
+        const month = parseInt(match[2], 10) - 1;
+        const year = parseInt(match[3], 10);
+        const dateObj = new Date(year, month, day);
+        if (now - dateObj.getTime() > ONE_WEEK_MS) {
+          changed = true;
+          return false;
+        }
+      }
+    }
+    return true;
+  });
+
+  if (changed) {
+    try {
+      fs.writeFileSync(LEADS_FILE_PATH, JSON.stringify(activeLeads, null, 2), "utf-8");
+    } catch (err) {
+      console.error("Erro escrevendo leads limpos de 1 semana:", err);
+    }
+  }
+
+  return activeLeads;
+}
+
 function readLeads(): any[] {
   try {
     if (fs.existsSync(LEADS_FILE_PATH)) {
       const data = fs.readFileSync(LEADS_FILE_PATH, "utf-8");
-      return JSON.parse(data || "[]");
+      const list = JSON.parse(data || "[]");
+      return cleanExpiredLeads(list);
     }
   } catch (err) {
     console.error("Erro lendo leads.json:", err);
@@ -39,7 +82,8 @@ function readLeads(): any[] {
 
 function writeLeads(leads: any[]) {
   try {
-    fs.writeFileSync(LEADS_FILE_PATH, JSON.stringify(leads, null, 2), "utf-8");
+    const cleaned = cleanExpiredLeads(leads);
+    fs.writeFileSync(LEADS_FILE_PATH, JSON.stringify(cleaned, null, 2), "utf-8");
   } catch (err) {
     console.error("Erro escrevendo leads.json:", err);
   }
@@ -141,7 +185,8 @@ app.post("/api/leads", (req, res) => {
   const newLead = {
     ...lead,
     id: lead.id || Math.random().toString(36).substring(2, 11),
-    date: lead.date || new Date().toLocaleString('pt-BR')
+    date: lead.date || new Date().toLocaleString('pt-BR'),
+    timestamp: lead.timestamp || Date.now()
   };
   
   const leads = readLeads();

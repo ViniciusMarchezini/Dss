@@ -180,15 +180,15 @@ export function FAQSection() {
   const faqs = [
     {
       q: "O que é e como funciona o lance embutido no consórcio Ademicon?",
-      a: "O lance embutido é uma facilidade comercial extraordinária oferecida pela Ademicon que permite que você utilize até um limite percentual (frequentemente até 30% ou mais conforme o grupo escolhido) do valor da sua própria carta de crédito para pagar o seu lance ofertado. Ou seja, se a sua carta é de R$ 200.000, você pode dar um lance de R$ 60.000 usando a própria carta, necessitando apenas quitar a diferença ou até mesmo reduzindo o valor total do crédito retirado (comprando um bem de R$ 140.000 livre de custos imediatos do próprio bolso)."
+      a: "O lance embutido é uma facilidade comercial extraordinária oferecida pela Ademicon que permite que você utilize até um limite percentual (frequentemente até 25% ou mais conforme o grupo escolhido) do valor da sua própria carta de crédito para pagar o seu lance ofertado. Ou seja, se a sua carta é de R$ 200.000, você pode dar um lance de R$ 50.000 usando a própria carta, necessitando apenas quitar a diferença ou até mesmo reduzindo o valor total do crédito retirado (comprando um bem de R$ 150.000 livre de custos imediatos do próprio bolso)."
     },
     {
       q: "É seguro ingressar no consórcio da Ademicon?",
       a: "Totalmente seguro e auditado. As regras de regulação e fiscalização de consórcio no Brasil são rigorosamente estabelecidas pela Lei nº 11.795/2008 e supervisionadas pelo Banco Central do Brasil. A Ademicon possui 30 anos de mercado sólido, possuindo autorização expressa outorgada pelo Banco Central nº 03/00.003-9, o que significa que seus fundos são protegidos com as mais altas garantias bancárias e comerciais modernas do país."
     },
     {
-      q: "O que significa a parcela reduzida de 70%?",
-      a: "A modalidade facilitada de Parcela Reduzida permite ao consorciado planejar sua conquista financeira pagando um valor mensal otimizado, equivalente a 70% da parcela integral de seu crédito antes de ser contemplado. Com isso, seu planejamento ganha folga no orçamento. Após a sua contemplação exclusiva (quando a carta de crédito total é retirada para compra), a parcela é recalculada para compensar a facilidade, ajustada proporcionalmente ao saldo devedor de maneira transparente."
+      q: "O que significa a parcela reduzida?",
+      a: "A modalidade facilitada de Parcela Reduzida permite ao consorciado planejar sua conquista financeira pagando um valor mensal otimizado, equivalente a 50% (Meia Parcela), 70% ou 85% da parcela integral de seu crédito antes de ser contemplado. Com isso, seu planejamento ganha folga no orçamento. Após a sua contemplação exclusiva (quando a carta de crédito total é retirada para compra), a parcela é recalculada para compensar a facilidade, ajustada proporcionalmente ao saldo devedor de maneira transparente."
     },
     {
       q: "Quais bens e serviços posso contratar no consórcio?",

@@ -10,6 +10,7 @@ export interface Lead {
   estimatedInstallmentReduced: number;
   useEmbeddedBid: boolean;
   date: string;
+  timestamp?: number;
 }
 
 export interface Gestor {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Building2, Car, Activity, Info, FileSpreadsheet, Share2, 
   HelpCircle, Sparkles, User, Phone, Mail, Check, Calendar, ArrowRight, Save
@@ -10,7 +10,7 @@ export default function ConsorcioSimulator() {
   const [activeCategory, setActiveCategory] = useState<'imoveis' | 'veiculos' | 'servicos'>('imoveis');
   const [credit, setCredit] = useState(SIM_CONFIGS.imoveis.defaultCredit);
   const [term, setTerm] = useState(SIM_CONFIGS.imoveis.defaultTerm);
-  const [useReduced, setUseReduced] = useState(true);
+  const [installmentPercentage, setInstallmentPercentage] = useState<100 | 85 | 70 | 50>(50);
   const [useEmbedded, setUseEmbedded] = useState(false);
 
   // Form Lead State
@@ -18,6 +18,7 @@ export default function ConsorcioSimulator() {
   const [leadPhone, setLeadPhone] = useState('');
   const [leadEmail, setLeadEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [whatsappRedirectUrl, setWhatsappRedirectUrl] = useState('');
   const [showShareTooltip, setShowShareTooltip] = useState(false);
   const [savedLeadsCount, setSavedLeadsCount] = useState(() => {
     try {
@@ -27,6 +28,51 @@ export default function ConsorcioSimulator() {
       return 0;
     }
   });
+
+  // Automatically clean up weekly leads from local storage on mount
+  useEffect(() => {
+    try {
+      const existing = localStorage.getItem('dss_leads_list');
+      if (existing) {
+        const list = JSON.parse(existing);
+        const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        let changed = false;
+
+        const filteredList = list.filter((l: any) => {
+          if (l.timestamp) {
+            if (now - l.timestamp > ONE_WEEK_MS) {
+              changed = true;
+              return false;
+            }
+            return true;
+          }
+          // Fallback parsing for DD/MM/YYYY
+          if (l.date && typeof l.date === 'string') {
+            const match = l.date.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+            if (match) {
+              const day = parseInt(match[1], 10);
+              const month = parseInt(match[2], 10) - 1;
+              const year = parseInt(match[3], 10);
+              const dateObj = new Date(year, month, day);
+              if (now - dateObj.getTime() > ONE_WEEK_MS) {
+                changed = true;
+                return false;
+              }
+            }
+          }
+          return true;
+        });
+
+        if (changed) {
+          localStorage.setItem('dss_leads_list', JSON.stringify(filteredList));
+          setSavedLeadsCount(filteredList.length);
+        }
+      }
+    } catch (err) {
+      console.error("Local storage lead renewal error:", err);
+    }
+  }, []);
 
   const config = useMemo(() => {
     return SIM_CONFIGS[activeCategory];
@@ -58,8 +104,8 @@ export default function ConsorcioSimulator() {
     // Normal installment
     const installmentFull = totalWithTaxes / term;
     
-    // Reduced 70% installment (exclusive to Ademicon)
-    const installmentReduced = installmentFull * 0.7;
+    // Dynamic percentage installment
+    const installmentReduced = installmentFull * (installmentPercentage / 100);
 
     // Simulated Bank Financing comparison
     const annualRate = activeCategory === 'imoveis' ? 0.095 : activeCategory === 'veiculos' ? 0.15 : 0.18;
@@ -75,14 +121,15 @@ export default function ConsorcioSimulator() {
       totalFinancing,
       savingComparedToFinancing,
       monthlyAdminTax: (config.adminTax / term) * 100,
-      embeddedBidValue: credit * 0.3
+      embeddedBidValue: credit * 0.25
     };
-  }, [credit, term, config, activeCategory]);
+  }, [credit, term, config, activeCategory, installmentPercentage]);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadName || !leadPhone) return;
 
+    const leadTimestamp = Date.now();
     const newLead: Lead = {
       id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(),
       name: leadName,
@@ -94,7 +141,8 @@ export default function ConsorcioSimulator() {
       estimatedInstallmentFull: calculations.installmentFull,
       estimatedInstallmentReduced: calculations.installmentReduced,
       useEmbeddedBid: useEmbedded,
-      date: new Date().toLocaleDateString('pt-BR')
+      date: new Date().toLocaleDateString('pt-BR'),
+      timestamp: leadTimestamp
     };
 
     try {
@@ -122,15 +170,40 @@ export default function ConsorcioSimulator() {
     .catch(err => {
       console.error("Erro ao sincronizar lead com o servidor:", err);
     });
+
+    // Redireciona para contato de IA no WhatsApp
+    const pLabel = installmentPercentage === 100 ? "Integral" : `Reduzida (${installmentPercentage}%)`;
+    const messageText = `Olá! Acabei de realizar uma simulação no site da DSS Intermediação e gostaria de prosseguir com o meu atendimento do consórcio Ademicon.
+
+Meus dados da simulação:
+- *Nome:* ${leadName}
+- *WhatsApp:* ${leadPhone}
+- *E-mail:* ${leadEmail || 'Não informado'}
+- *Categoria:* ${activeCategory.toUpperCase()}
+- *Crédito:* ${formattedCurrency(credit)}
+- *Prazo:* ${term} meses
+- *Modalidade:* Parcela ${pLabel}
+- *Parcela Inicial:* ${formattedCurrency(calculations.installmentReduced)}
+${useEmbedded ? `- *Adicional:* Com uso de Lance Embutido de até 25% (${formattedCurrency(calculations.embeddedBidValue)})` : ""}`;
+
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=5511992406082&text=${encodeURIComponent(messageText)}`;
+    setWhatsappRedirectUrl(whatsappUrl);
+    
+    // Attempt automatic prompt redirect
+    setTimeout(() => {
+      window.open(whatsappUrl, '_blank');
+    }, 300);
   };
 
   const handleCopyLink = () => {
+    const pLabel = installmentPercentage === 100 ? "Integral" : `Reduzida (${installmentPercentage}%)`;
     const formattedText = `DSS Simulação - Consórcio Ademicon
 Categoria: ${activeCategory.toUpperCase()}
 Crédito: ${formattedCurrency(credit)}
 Prazo: ${term} meses
-Parc. Facilitada (70%): ${formattedCurrency(calculations.installmentReduced)}
-Parc. Integral (100%): ${formattedCurrency(calculations.installmentFull)}
+Modalidade: Parcela ${pLabel}
+Valor de Parcela Selecionada: ${formattedCurrency(calculations.installmentReduced)}
+${installmentPercentage !== 100 ? `(Diferença de ${100 - installmentPercentage}% é diluída pós-contemplação)` : ""}
 Poupe até ${formattedCurrency(calculations.savingComparedToFinancing)} vs financiamento bancário!
 Visite dss-intermediacao.com.br`;
 
@@ -286,35 +359,60 @@ Visite dss-intermediacao.com.br`;
         </div>
 
         {/* Features Addons checkboxes */}
-        <div className="space-y-3 pt-4 border-t border-slate-100">
-          <label className="text-xs font-bold text-slate-505 uppercase tracking-wider block">4. Otimizadores de Contemplação</label>
+        <div className="space-y-4 pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">4. Escolha o Percentual da Parcela</label>
+            <span className="bg-blue-100 text-blue-705 px-1.5 py-0.5 rounded text-[8px] font-black uppercase">Exclusivo Ademicon</span>
+          </div>
+          <p className="text-slate-505 text-[11px] leading-relaxed font-light">
+            Selecione pagar parcelas reduzidas até a contemplação para otimizar seu caixa mensal. A diferença é diluída de forma inteligente apenas após a contemplação.
+          </p>
           
-          <div className="space-y-2.5">
-            {/* Parcela Reduzida */}
-            <div 
-              onClick={() => setUseReduced(!useReduced)}
-              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-4 ${
-                useReduced 
-                  ? 'bg-blue-50/50 border-blue-200 shadow-sm' 
-                  : 'bg-slate-50/20 border-slate-200 hover:bg-slate-100/60'
-              }`}
-            >
-              <div className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                useReduced ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300'
-              }`}>
-                {useReduced && <Check className="w-3.5 h-3.5 stroke-[4px]" />}
-              </div>
-              <div className="space-y-1 select-none text-slate-800">
-                <div className="flex items-center space-x-1.5">
-                  <h4 className="font-bold text-slate-800 text-xs sm:text-sm">Parcela Facilitada Ademicon (70%)</h4>
-                  <span className="bg-blue-100 text-blue-705 px-1.5 py-0.5 rounded text-[8px] font-black uppercase">Excl. Ademicon</span>
+          <div className="grid grid-cols-2 gap-2.5">
+            {[
+              { percentage: 50, label: 'Meia Parcela 50%', desc: 'Mais Usada/Fácil 🔥', highlight: true },
+              { percentage: 70, label: 'Parcela 70%', desc: 'Excelente Equilíbrio', highlight: false },
+              { percentage: 85, label: 'Parcela 85%', desc: 'Suavização Ideal', highlight: false },
+              { percentage: 100, label: 'Integral 100%', desc: 'Sem saldo residual', highlight: false }
+            ].map((opt) => (
+              <button
+                key={opt.percentage}
+                type="button"
+                onClick={() => setInstallmentPercentage(opt.percentage as any)}
+                className={`p-3.5 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer group ${
+                  installmentPercentage === opt.percentage 
+                    ? 'bg-blue-50/50 border-blue-600 shadow-sm ring-1 ring-blue-600/10' 
+                    : 'bg-slate-50/40 border-slate-200 hover:bg-slate-100/60'
+                }`}
+              >
+                {opt.percentage === 50 && (
+                  <span className="absolute -top-2 right-2.5 bg-emerald-600 text-white text-[8px] font-bold uppercase px-1.5 py-0.5 rounded shadow-sm tracking-wider">
+                    Mais Usada ⭐
+                  </span>
+                )}
+                <div>
+                  <div className="flex items-center gap-1">
+                    <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                      installmentPercentage === opt.percentage ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300'
+                    }`}>
+                      <div className="w-1.5 h-1.5 rounded-full bg-white animate-scaleIn" />
+                    </div>
+                    <span className={`text-xs font-black tracking-tight ${installmentPercentage === opt.percentage ? 'text-blue-750' : 'text-slate-705'}`}>
+                      {opt.label}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-light mt-1.5 select-none leading-tight">
+                    {opt.desc}
+                  </p>
                 </div>
-                <p className="text-slate-500 text-[11px] leading-normal font-light">
-                  Pague apenas 70% do valor da parcela até a sua contemplação por sorteio ou lance. A diferença é diluída apenas depois do recebimento do bem.
-                </p>
-              </div>
-            </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
+        <div className="space-y-3 pt-4 border-t border-slate-100">
+          <label className="text-xs font-bold text-slate-550 uppercase tracking-wider block">5. Otimizadores de Contemplação</label>
+          <div className="space-y-2.5">
             {/* Lance Embutido */}
             <div 
               onClick={() => setUseEmbedded(!useEmbedded)}
@@ -330,9 +428,9 @@ Visite dss-intermediacao.com.br`;
                 {useEmbedded && <Check className="w-3.5 h-3.5 stroke-[4px]" />}
               </div>
               <div className="space-y-1 select-none text-slate-800">
-                <h4 className="font-bold text-slate-800 text-xs sm:text-sm">Lance Embutido de até 30%</h4>
+                <h4 className="font-bold text-slate-800 text-xs sm:text-sm">Lance Embutido de até 25%</h4>
                 <p className="text-slate-505 text-[11px] leading-normal font-light">
-                  Permite utilizar até 30% do próprio crédito (<strong>{formattedCurrency(calculations.embeddedBidValue)}</strong>) para turbinar o seu lance de contemplação voluntário.
+                  Permite utilizar até 25% do próprio crédito (<strong>{formattedCurrency(calculations.embeddedBidValue)}</strong>) para turbinar o seu lance de contemplação voluntário.
                 </p>
               </div>
             </div>
@@ -351,18 +449,24 @@ Visite dss-intermediacao.com.br`;
           </div>
 
           <div className="space-y-4">
-            {useReduced ? (
+            {installmentPercentage !== 100 ? (
               <div className="p-4 bg-blue-50/45 rounded-2xl border border-blue-200 relative overflow-hidden">
                 <div className="absolute top-2.5 right-3 px-1.5 py-0.5 bg-blue-600 text-[8px] font-black text-white rounded">
-                  70% ATÉ CONTEMPLAÇÃO
+                  {installmentPercentage}% ATÉ CONTEMPLAÇÃO
                 </div>
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wide font-mono block">Parcela Facilitada inicial</span>
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wide font-mono block">Parcela Facilitada ({installmentPercentage}%)</span>
                 <span className="text-2xl sm:text-3xl font-black text-blue-700 font-mono mt-1 block">
                   {formattedCurrency(calculations.installmentReduced)}
                   <span className="text-xs font-semibold text-slate-500">/mês</span>
                 </span>
                 <span className="text-[10px] text-slate-450 leading-normal block mt-1.5 font-light">
-                  Após a contemplação, a parcela se ajusta para o valor cheio com acréscimo de saldo diluído.
+                  {installmentPercentage === 50 ? (
+                    "Pague apenas MEIA parcela (50%) do início até a sua contemplação por sorteio ou lance. Extremamente famosa por maximizar a economia e o fluxo de caixa."
+                  ) : installmentPercentage === 70 ? (
+                    "Pague apenas 70% da parcela do início até a sua contemplação por sorteio ou lance. Proporciona excelente equilíbrio financeiro de planejamento."
+                  ) : (
+                    "Pague apenas 85% do valor da parcela mensal até a sua contemplação por sorteio ou lance, reduzindo ligeiramente no início do seu plano."
+                  )}
                 </span>
               </div>
             ) : (
@@ -373,7 +477,7 @@ Visite dss-intermediacao.com.br`;
                   <span className="text-xs font-semibold text-slate-500">/mês</span>
                 </span>
                 <span className="text-[10px] text-slate-450 leading-normal block mt-1.5 font-light">
-                  Plano linear tradicional do início ao fim sem facilitador temporário de 70%.
+                  Plano linear tradicional do início ao fim sem facilitador temporário ou diluição pós-contemplação.
                 </span>
               </div>
             )}
@@ -441,19 +545,39 @@ Visite dss-intermediacao.com.br`;
         {/* Lead Form Box */}
         <div id="lead-form-section" className="bg-blue-50/50 border border-blue-100 rounded-3xl p-5 sm:p-6 space-y-3.5 relative shadow-sm">
           {isSubmitted ? (
-            <div className="py-8 text-center space-y-3 animate-fadeIn">
+            <div className="py-6 text-center space-y-4 animate-fadeIn">
               <div className="w-12 h-12 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center mx-auto text-emerald-700">
                 <Check className="w-6 h-6 stroke-[3px]" />
               </div>
-              <div className="space-y-1">
-                <h4 className="font-extrabold text-slate-800 text-sm">Simulação Registrada!</h4>
-                <p className="text-slate-500 text-xs font-light max-w-xs mx-auto">
-                  Seus dados de planejamento foram salvos localmente. Nossos gestores autorizados Denilson ou Davison entrarão em contato para estruturá-lo no melhor grupo Ademicon.
+              <div className="space-y-1.5 font-light">
+                <h4 className="font-extrabold text-slate-800 text-sm">Simulação Enviada com Sucesso!</h4>
+                <p className="text-slate-600 text-xs font-semibold max-w-xs mx-auto">
+                  Seus dados de planejamento foram registrados em nossa área administrativa.
+                </p>
+                <p className="text-slate-500 text-[11px] max-w-xs mx-auto leading-relaxed">
+                  Você está sendo direcionado para falar com a nossa <strong>Inteligência Artificial de Consórcio</strong> no WhatsApp para esclarecer suas dúvidas e negociar o seu plano.
                 </p>
               </div>
+
+              {whatsappRedirectUrl && (
+                <div className="pt-2 max-w-xs mx-auto">
+                  <a
+                    href={whatsappRedirectUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex w-full items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs py-3 px-4 rounded-xl shadow-md transition-all hover:scale-[1.02] cursor-pointer animate-pulse"
+                  >
+                    <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.1 1.452 4.6 1.453 5.4.002 9.794-4.39 9.797-9.789.002-2.614-1.012-5.071-2.855-6.914C16.3 2.062 13.845 1.05 11.233 1.05c-5.4 0-9.792 4.39-9.795 9.789-.001 1.953.5 3.848 1.452 5.539l-.951 3.473 3.565-.935zm12.574-6.84c-.307-.154-1.82-.9-2.1-.1s-.23.8-.42.923c-.184.123-.37.246-.615.123-.246-.123-1.033-.38-1.97-1.219-.728-.65-1.219-1.453-1.361-1.7-.142-.246-.015-.377.108-.5.111-.11.246-.289.37-.43.123-.142.164-.246.246-.41.082-.164.041-.307-.02-.43-.062-.123-.554-1.334-.76-1.829-.2-.48-.42-.41-.57-.42h-.493c-.172 0-.452.065-.688.32-.236.255-1.002.980-1.002 2.39s1.026 2.78 1.17 2.972c.143.19 2.015 3.08 4.881 4.32.68.293 1.214.47 1.63.601.685.22 1.309.187 1.8.113.55-.082 1.82-.743 2.078-1.46.26-.718.26-1.332.184-1.46-.076-.123-.28-.198-.58-.352z" />
+                    </svg>
+                    <span>Falar no WhatsApp da IA</span>
+                  </a>
+                </div>
+              )}
+
               <button 
                 onClick={() => setIsSubmitted(false)}
-                className="mt-2 text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
+                className="mt-2 text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer block mx-auto pt-1"
               >
                 Realizar nova simulação de crédito
               </button>
